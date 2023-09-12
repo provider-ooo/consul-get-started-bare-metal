@@ -33,6 +33,33 @@ _log_warn "CONSUL_DATACENTER = ${CONSUL_DATACENTER}"
 _log_warn "CONSUL_DOMAIN = ${CONSUL_DOMAIN}"
 _log_warn "CONSUL_SERVER_NUMBER = ${CONSUL_SERVER_NUMBER}"
 
+if [[ " $@ " =~ --interface=([^' ']+) ]]; then
+  HOST_INTERFACE=${BASH_REMATCH[1]}
+else
+  _log_err "Missing interface. (ex: $(basename $0) --interface=eno1)"
+  exit 1;
+fi
+
+if [[ " $@ " =~ --consul-datacenter=([^' ']+) ]]; then
+  CONSUL_DATACENTER=${BASH_REMATCH[1]}
+fi
+
+if [[ " $@ " =~ --consul-domain=([^' ']+) ]]; then
+  CONSUL_DOMAIN=${BASH_REMATCH[1]}
+fi
+
+if [[ " $@ " =~ --consul-data-dir=([^' ']+) ]]; then
+  CONSUL_DATA_DIR=${BASH_REMATCH[1]}
+fi
+
+if [[ " $@ " =~ --consul-config-dir=([^' ']+) ]]; then
+  CONSUL_CONFIG_DIR=${BASH_REMATCH[1]}
+fi
+
+if [[ " $@ " =~ --consul-retry-join=([^' ']+) ]]; then
+  CONSUL_RETRY_JOIN=${BASH_REMATCH[1]}
+fi
+
 ## Control plane variables
 CONSUL_DATACENTER=${CONSUL_DATACENTER:-"dc1"}
 CONSUL_DOMAIN=${CONSUL_DOMAIN:-"consul"}
@@ -45,6 +72,8 @@ CONSUL_HTTPS_PORT=${CONSUL_HTTPS_PORT:-"8443"}
 CONSUL_CONFIG_DIR=${CONSUL_CONFIG_DIR:-"/etc/consul.d/"}
 CONSUL_DATA_DIR=${CONSUL_DATA_DIR:-"/opt/consul/"}
 CONSUL_LOG_LEVEL=${CONSUL_LOG_LEVEL:-"DEBUG"}
+
+CONSUL_RETRY_JOIN=${CONSUL_RETRY_JOIN:-"consul-server-0"}
 
 ## When running the script as part of an automated scenario
 ## the STEP_ASSETS variable will be populated by the calling script.
@@ -202,7 +231,7 @@ connect {
 
 # Addresses and ports
 client_addr = "127.0.0.1"
-bind_addr   = "{{ GetInterfaceIP \"eth0\" }}"
+bind_addr   = "{{ GetInterfaceIP \"${HOST_INTERFACE}\" }}"
 
 addresses {
   grpc = "127.0.0.1"

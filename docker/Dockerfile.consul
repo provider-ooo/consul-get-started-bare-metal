@@ -1,0 +1,16 @@
+FROM ubuntu:latest
+
+ARG CONSUL_VERSION
+ARG CONSUL_PLATEFORM
+
+RUN apt update && apt install unzip curl -y
+RUN echo $CONSUL_PLATEFORM && curl --silent --remote-name https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_${CONSUL_PLATEFORM}.zip \
+&& unzip consul_${CONSUL_VERSION}_${CONSUL_PLATEFORM}.zip \
+&& mv consul /usr/local/bin/
+
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
+
+WORKDIR /ops
+
+ENTRYPOINT ["/usr/local/bin/entrypoint"]

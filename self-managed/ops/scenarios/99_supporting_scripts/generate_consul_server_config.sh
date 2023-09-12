@@ -26,13 +26,6 @@ _log_warn() {
 # || Parameters      |
 # ++-----------------+
 
-_header "Generate Consul servers configuration"
-
-## [debug] Check variables
-_log_warn "CONSUL_DATACENTER = ${CONSUL_DATACENTER}"
-_log_warn "CONSUL_DOMAIN = ${CONSUL_DOMAIN}"
-_log_warn "CONSUL_SERVER_NUMBER = ${CONSUL_SERVER_NUMBER}"
-
 if [[ " $@ " =~ --interface=([^' ']+) ]]; then
   HOST_INTERFACE=${BASH_REMATCH[1]}
 else
@@ -56,14 +49,30 @@ if [[ " $@ " =~ --consul-config-dir=([^' ']+) ]]; then
   CONSUL_CONFIG_DIR=${BASH_REMATCH[1]}
 fi
 
-if [[ " $@ " =~ --consul-retry-join=([^' ']+) ]]; then
-  CONSUL_RETRY_JOIN=${BASH_REMATCH[1]}
+if [[ " $@ " =~ --consul-retry-join=\[([^' ']+)\] ]]; then
+  join_list=${BASH_REMATCH[1]//,/ }
+  for join in $join_list; do
+    CONSUL_RETRY_JOIN+=" \"${join}\""
+  done
+  CONSUL_RETRY_JOIN=${CONSUL_RETRY_JOIN:1}
+  CONSUL_RETRY_JOIN=${CONSUL_RETRY_JOIN// /,}
+  echo ${CONSUL_RETRY_JOIN}
+else
+  _log_err "Missing join members. (ex: $(basename $0) --consul-retry-join=[172.16.8.3,172.16.8.2])"
+  exit 1;
 fi
+
+_header "Generate Consul servers configuration"
 
 ## Control plane variables
 CONSUL_DATACENTER=${CONSUL_DATACENTER:-"dc1"}
 CONSUL_DOMAIN=${CONSUL_DOMAIN:-"consul"}
 CONSUL_SERVER_NUMBER=${CONSUL_SERVER_NUMBER:-1}
+
+## [debug] Check variables
+_log_warn "CONSUL_DATACENTER = ${CONSUL_DATACENTER}"
+_log_warn "CONSUL_DOMAIN = ${CONSUL_DOMAIN}"
+_log_warn "CONSUL_SERVER_NUMBER = ${CONSUL_SERVER_NUMBER}"
 
 CONSUL_DNS_RECURSOR=${CONSUL_DNS_RECURSOR:-"1.1.1.1"}
 CONSUL_DNS_PORT=${CONSUL_DNS_PORT:-"8600"}
@@ -106,7 +115,7 @@ mkdir -p "${OUTPUT_FOLDER}" && \
 
 _log "Generate secrets."
 
-pushd "${OUTPUT_FOLDER}secrets"  > /dev/null 2>&1
+pushd "${OUTPUT_FOLDER}secrets" > /dev/null 2>&1
 
 ## Check if using a pre-defined gossip encryption key
 if [ ! -z "${CONSUL_GOSSIP_KEY}" ]; then
@@ -254,7 +263,7 @@ ports {
 }
 
 # Join other Consul agents
-retry_join = [ "${CONSUL_RETRY_JOIN}" ]
+retry_join = [${CONSUL_RETRY_JOIN}]
 
 # DNS recursors
 recursors = ["${CONSUL_DNS_RECURSOR}"]
@@ -351,7 +360,8 @@ telemetry {
 EOF
 
   _log "Validate configuration for consul-server-$i"
-  consul validate ./  > /dev/null 2>&1
+  # consul validate ./  > /dev/null 2>&1
+  consul validate ./
 
   STAT=$?
 
@@ -360,7 +370,7 @@ EOF
     exit 1;
   fi
 
-  popd  > /dev/null 2>&1
+  popd > /dev/null 2>&1
 
 done
 

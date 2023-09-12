@@ -15,3 +15,6 @@ terraform.tfstate*
 
 # *.pem
 # acl-token-bootstrap.json
+
+config/*
+!config/.gitkeep

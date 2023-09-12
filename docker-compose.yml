@@ -1,0 +1,35 @@
+version: '3'
+
+x-common-variables: &common-variables
+  LIB_PATH: /usr/local/sbin/lib
+  OUTPUT_FOLDER: /config/
+
+x-common-volumes: &common-volumes
+  # Basic env mount
+  - './config:/config:rw'
+  # - './.env:/etc/environment:ro'
+  # Common libs
+  - './scripts/lib:/usr/local/sbin/lib:ro'
+  # Scripts
+  - './self-managed/ops:/ops:ro'
+
+x-consul-service: &consul-service
+  # user: '$USER_ID'
+  build:
+    context: .
+    args:
+      CONSUL_VERSION: 1.16.1
+      CONSUL_PLATEFORM: linux_amd64
+    dockerfile: docker/Dockerfile.consul
+  image: bare-metal/consul
+  environment: *common-variables
+  volumes: *common-volumes
+
+services:
+  bash:
+    <<: *consul-service
+    entrypoint: '/usr/local/bin/entrypoint bash'
+
+  consul_server_config:
+    <<: *consul-service
+    entrypoint: '/usr/local/bin/entrypoint /ops/scenarios/99_supporting_scripts/generate_consul_server_config.sh'

@@ -2,6 +2,12 @@
 
 > **WARNING:** the script is currently under development. Some configurations might not work as expected. **Do not test on production environments.**
 
+## Config.sh tooling
+
+```
+./config.sh consul_server_config --interface=eno1 --consul-datacenter=dc1 --consul-retry-join=[172.16.8.3,172.16.8.2]
+```
+
 ## Test scenarios
 
 Using the pre-configured environments you can spin-up scenarios to be used in
